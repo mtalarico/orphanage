@@ -1,7 +1,15 @@
 use mongodb::bson;
+use serde::{Deserialize, Serialize};
 use tokio::sync::{broadcast, mpsc};
 
-use crate::{chunk::Chunk, db::Id};
+use crate::chunk::Chunk;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Orphan {
+    #[serde(skip_serializing, skip_deserializing)]
+    pub shard: String,
+    pub _id: bson::oid::ObjectId,
+}
 
 #[derive(Debug, Clone)]
 pub struct Shard {
@@ -14,7 +22,7 @@ pub enum Command {
     FindOrphanedId {
         ns: mongodb::Namespace,
         chunk: Chunk,
-        rsp_chnnl: mpsc::Sender<Id>,
+        rsp_chnnl: mpsc::Sender<Orphan>,
     },
 }
 
@@ -47,10 +55,15 @@ impl Shard {
                 chunk,
                 rsp_chnnl,
             } => {
-                let mut ids = self.find_orphaned_ids(&ns, chunk).await;
-                while ids.advance().await.expect("cannot advance id cursor") {
-                    let id = ids.deserialize_current().expect("cannot parse id");
-                    let _ = rsp_chnnl.send(id).await;
+                // dont search for orphans on the source of truth shard
+                if self.name == chunk.shard {
+                    return;
+                }
+                let mut orphans = self.find_orphaned_ids(&ns, chunk).await;
+                while orphans.advance().await.expect("cannot advance id cursor") {
+                    let mut orphan = orphans.deserialize_current().expect("cannot parse id");
+                    orphan.shard = self.name.clone();
+                    let _ = rsp_chnnl.send(orphan).await;
                 }
             }
         }
@@ -60,17 +73,18 @@ impl Shard {
         &self,
         ns: &mongodb::Namespace,
         chunk: Chunk,
-    ) -> mongodb::Cursor<Id> {
+    ) -> mongodb::Cursor<Orphan> {
         let projection = bson::doc! { "_id": 1 };
         let options = mongodb::options::FindOptions::builder()
             .projection(projection)
             .build();
         println!("searching for chunk {:?} on shard {:?}", chunk, &self.name);
+        let filter = chunk.filter_for_range();
         let result = self
             .client
             .database(ns.db.as_str())
-            .collection::<Id>(ns.coll.as_str())
-            .find(chunk.min, options)
+            .collection::<Orphan>(ns.coll.as_str())
+            .find(filter, options)
             .await
             .expect("cannot execute find");
         result

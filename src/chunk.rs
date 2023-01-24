@@ -8,6 +8,15 @@ pub struct Chunk {
     pub max: bson::Document,
 }
 
+impl Chunk {
+    pub fn filter_for_range(&self) -> bson::Document {
+        // for each in self.min.keys() {
+        //     // if self.
+        // }
+        bson::doc! {}
+    }
+}
+
 pub fn merge_or_add(chunk: &Chunk, chunks: &mut Vec<Chunk>) {
     let mut combined = false;
     for each in chunks.iter_mut() {

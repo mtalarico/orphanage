@@ -5,8 +5,8 @@ use tokio::sync::{broadcast, mpsc};
 
 use crate::{
     chunk::{self, Chunk},
-    db::{self, Id},
-    shard::{Command, Shard},
+    db,
+    shard::{Command, Orphan, Shard},
     util,
 };
 
@@ -57,7 +57,7 @@ impl ShardedCluster {
     pub async fn find_orphaned(
         &self,
         ns: mongodb::Namespace,
-        tx: mpsc::Sender<Id>,
+        tx: mpsc::Sender<Orphan>,
     ) -> mongodb::error::Result<()> {
         let chunks = self.get_megachunks(Some(&ns)).await?;
         for chunk in chunks {

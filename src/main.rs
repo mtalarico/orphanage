@@ -20,8 +20,11 @@ async fn main() -> mongodb::error::Result<()> {
     let cluster = ShardedCluster::new(&args.uri).await?;
 
     tokio::spawn(async move { cluster.find_orphaned(ns.clone(), tx).await });
-    while let Some(id) = rx.recv().await {
-        println!("got id {:?}", id)
+    let mut counter = 0;
+    while let Some(orphan) = rx.recv().await {
+        counter += 1;
+        println!("got orphan {:?}", orphan)
     }
+    println!("{counter}");
     Ok(())
 }

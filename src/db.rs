@@ -2,14 +2,8 @@ use std::collections::HashMap;
 
 use futures::TryStreamExt;
 use mongodb::bson;
-use serde::{Deserialize, Serialize};
 
 use crate::{chunk, util};
-
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
-pub struct Id {
-    pub _id: bson::oid::ObjectId,
-}
 
 /// connects to instance at uri, specify options and credentials according to mongodb docs
 pub async fn connect(uri: &str) -> mongodb::error::Result<mongodb::Client> {
