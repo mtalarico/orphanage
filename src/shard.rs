@@ -1,77 +1,78 @@
-use futures::TryStreamExt;
 use mongodb::bson;
-use tokio::{sync::mpsc, task};
+use tokio::sync::{broadcast, mpsc};
 
 use crate::{chunk::Chunk, db::Id};
 
+#[derive(Debug, Clone)]
 pub struct Shard {
     pub name: String,
-    pub handle: task::JoinHandle<()>,
-    pub job_tx: mpsc::Sender<Command>,
-    pub result_rx: mpsc::Receiver<Response>,
+    client: mongodb::Client,
+}
+
+#[derive(Debug, Clone)]
+pub enum Command {
+    FindOrphanedId {
+        ns: mongodb::Namespace,
+        chunk: Chunk,
+        rsp_chnnl: mpsc::Sender<Id>,
+    },
 }
 
 impl Shard {
-    pub async fn new(name: &str, client: mongodb::Client) -> mongodb::error::Result<Self> {
-        let (job_tx, job_rx) = mpsc::channel::<Command>(1000);
-        let (response_tx, result_rx) = mpsc::channel::<Response>(1000);
-
-        let handle = tokio::spawn(async move {
-            for job in job_rx {
-                let response = Self::run_command(&client, job).await;
-                let _ = response_tx.send(response);
+    pub async fn new(
+        name: &str,
+        client: mongodb::Client,
+        mut rx: broadcast::Receiver<Command>,
+    ) -> mongodb::error::Result<Self> {
+        let me = Self {
+            name: String::from(name),
+            client: client.clone(),
+        };
+        tokio::spawn(async move {
+            while let Ok(command) = rx.recv().await {
+                me.run_command(command).await;
             }
         });
 
         Ok(Self {
             name: String::from(name),
-            handle,
-            job_tx,
-            result_rx,
+            client: client.clone(),
         })
     }
 
-    async fn run_command(client: &mongodb::Client, command: Command) -> Response {
+    async fn run_command(&self, command: Command) {
         match command {
-            Command::FindOrphanedId(shard_name, ns, chunk) => {
-                let ids = find_orphaned_ids(shard_name, &client, &ns, chunk).await;
-                Response::FindOrphanedId(ids)
+            Command::FindOrphanedId {
+                ns,
+                chunk,
+                rsp_chnnl,
+            } => {
+                let mut ids = self.find_orphaned_ids(&ns, chunk).await;
+                while ids.advance().await.expect("cannot advance id cursor") {
+                    let id = ids.deserialize_current().expect("cannot parse id");
+                    let _ = rsp_chnnl.send(id).await;
+                }
             }
         }
     }
-}
 
-#[derive(Debug)]
-pub enum Command {
-    FindOrphanedId(String, mongodb::Namespace, Chunk),
-}
-
-#[derive(Debug)]
-
-pub enum Response {
-    FindOrphanedId(Vec<Id>),
-}
-
-async fn find_orphaned_ids(
-    shard_name: String,
-    client: &mongodb::Client,
-    ns: &mongodb::Namespace,
-    chunk: Chunk,
-) -> Vec<Id> {
-    let projection = bson::doc! { "_id": 1 };
-    let options = mongodb::options::FindOptions::builder()
-        .projection(projection)
-        .build();
-    // let filter = bson::doc! {};
-    println!("searching for chunk {:?} on shard {:?}", chunk, shard_name);
-    let result = client
-        .database(ns.db.as_str())
-        .collection::<Id>(ns.coll.as_str())
-        .find(chunk.min, options)
-        .await
-        .expect("cannot execute find");
-    result
-        .try_collect()
-        .await
-        .expect("cannot iterate cursor to vec")
+    async fn find_orphaned_ids(
+        &self,
+        ns: &mongodb::Namespace,
+        chunk: Chunk,
+    ) -> mongodb::Cursor<Id> {
+        let projection = bson::doc! { "_id": 1 };
+        let options = mongodb::options::FindOptions::builder()
+            .projection(projection)
+            .build();
+        println!("searching for chunk {:?} on shard {:?}", chunk, &self.name);
+        let result = self
+            .client
+            .database(ns.db.as_str())
+            .collection::<Id>(ns.coll.as_str())
+            .find(chunk.min, options)
+            .await
+            .expect("cannot execute find");
+        result
+    }
 }

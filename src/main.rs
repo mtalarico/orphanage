@@ -1,4 +1,5 @@
-use tokio::time;
+use cluster::ShardedCluster;
+use tokio::sync::mpsc;
 
 mod chunk;
 mod cli;
@@ -15,9 +16,12 @@ async fn main() -> mongodb::error::Result<()> {
         coll: args.coll,
     };
 
-    let cluster = cluster::ShardedCluster::new(&args.uri).await?;
-    cluster.find_orphaned(&ns).await?;
+    let (tx, mut rx) = mpsc::channel(128);
+    let cluster = ShardedCluster::new(&args.uri).await?;
 
-    time::sleep(time::Duration::from_secs(10)).await;
+    tokio::spawn(async move { cluster.find_orphaned(ns.clone(), tx).await });
+    while let Some(id) = rx.recv().await {
+        println!("got id {:?}", id)
+    }
     Ok(())
 }
