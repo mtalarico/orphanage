@@ -1,21 +1,23 @@
+use tokio::time;
+
+mod chunk;
 mod cli;
+mod cluster;
 mod db;
-mod orphanage;
-mod sharding;
+mod shard;
 mod util;
 
 #[tokio::main]
 async fn main() -> mongodb::error::Result<()> {
     let args = cli::args();
-    let ns = db::Namespace {
-        db: args.db.as_str(),
-        coll: args.coll.as_str(),
+    let ns = mongodb::Namespace {
+        db: args.db,
+        coll: args.coll,
     };
 
-    let mongos = db::connect(&args.uri).await?;
-    db::assert_mongos(&mongos).await?;
-    let shards = db::connect_to_shards(&mongos).await?;
+    let cluster = cluster::ShardedCluster::new(&args.uri).await?;
+    cluster.find_orphaned(&ns).await?;
 
-    let _orphans = orphanage::find_orphaned(mongos, shards, ns).await?;
+    time::sleep(time::Duration::from_secs(10)).await;
     Ok(())
 }

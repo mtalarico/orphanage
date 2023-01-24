@@ -13,7 +13,21 @@ pub fn isdbgrid_error(err: mongodb::error::Error) -> bool {
     return err.to_string().contains("no such command: 'isdbgrid'");
 }
 
-pub fn version_above_5(version: &str) -> bool {
+pub async fn get_ns_filter(
+    client: &mongodb::Client,
+    ns: &mongodb::Namespace,
+) -> mongodb::error::Result<bson::Document> {
+    let version = db::get_version(&client).await?;
+
+    if version_above_5(version.as_str()) == true {
+        let uuid = get_uuid_for_ns(&client, &ns).await?;
+        Ok(bson::doc! { "uuid": uuid })
+    } else {
+        Ok(bson::doc! {"ns": ns.to_string().as_str()})
+    }
+}
+
+fn version_above_5(version: &str) -> bool {
     let major_version = version.split(".").collect::<Vec<&str>>()[0];
     let major_version = major_version
         .parse::<i32>()
@@ -21,20 +35,11 @@ pub fn version_above_5(version: &str) -> bool {
     major_version >= 5
 }
 
-pub async fn get_cluster_version(client: &mongodb::Client) -> mongodb::error::Result<String> {
-    let doc = client
-        .database("admin")
-        .run_command(bson::doc! {"serverStatus": 1}, None)
-        .await?;
-    let version = doc.get_str("version").expect("cannot get server version");
-    Ok(String::from(version))
-}
-
-pub async fn get_uuid_for_ns(
+async fn get_uuid_for_ns(
     client: &mongodb::Client,
-    ns: &db::Namespace,
+    ns: &mongodb::Namespace,
 ) -> mongodb::error::Result<bson::Binary> {
-    let filter = bson::doc! { "_id": ns.as_str() };
+    let filter = bson::doc! { "_id": ns.to_string().as_str() };
     let doc = client
         .database("config")
         .collection::<bson::Document>("collections")
