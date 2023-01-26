@@ -59,9 +59,30 @@ impl Shard {
                 if self.name == chunk.shard {
                     return;
                 }
+                let colls = self
+                    .client
+                    .database(&ns.db)
+                    .list_collection_names(None)
+                    .await
+                    .expect("error finding ns");
+                if !&colls.contains(&ns.coll) {
+                    println!(
+                        "ns {:?} not found on shard {:?} skipping",
+                        &ns.to_string(),
+                        &self.name
+                    );
+                }
                 let mut orphans = self.find_orphaned_ids(&ns, chunk).await;
-                while orphans.advance().await.expect("cannot advance id cursor") {
-                    let mut orphan = orphans.deserialize_current().expect("cannot parse id");
+                while orphans
+                    .advance()
+                    .await
+                    .expect("cannot advance orphan cursor")
+                {
+                    let doc = orphans
+                        .deserialize_current()
+                        .expect("cannot read doc from cursor");
+                    let mut orphan: Orphan =
+                        bson::from_document(doc).expect("cannot deseralize orphan");
                     orphan.shard = self.name.clone();
                     let _ = rsp_chnnl.send(orphan).await;
                 }
@@ -73,18 +94,18 @@ impl Shard {
         &self,
         ns: &mongodb::Namespace,
         chunk: Chunk,
-    ) -> mongodb::Cursor<Orphan> {
-        let projection = bson::doc! { "_id": 1 };
-        let options = mongodb::options::FindOptions::builder()
-            .projection(projection)
-            .build();
-        println!("searching for chunk {:?} on shard {:?}", chunk, &self.name);
-        let filter = chunk.filter_for_range();
+    ) -> mongodb::Cursor<bson::Document> {
+        let projection = bson::doc! { "$project": { "_id": 1 }};
+        let filter = bson::doc! { "$match": chunk.filter_for_range()};
+        // println!(
+        //     "searching for chunk {:?} on shard {:?} with filter {:?}",
+        //     chunk, &self.name, &filter
+        // );
         let result = self
             .client
             .database(ns.db.as_str())
             .collection::<Orphan>(ns.coll.as_str())
-            .find(filter, options)
+            .aggregate([filter, projection], None)
             .await
             .expect("cannot execute find");
         result

@@ -13,6 +13,7 @@ use crate::{
 pub struct ShardedCluster {
     pub router: mongodb::Client,
     pub shards: HashMap<String, Shard>,
+    pub shard_count: usize,
     _broadcast_tx: broadcast::Sender<Command>,
     _broadcast_rx: broadcast::Receiver<Command>,
 }
@@ -20,6 +21,7 @@ pub struct ShardedCluster {
 impl ShardedCluster {
     /// return a new sharded cluster, containing both a connection to a mongos pool and a connection to all shards
     pub async fn new(uri: &str) -> mongodb::error::Result<Self> {
+        let mut shard_count = 0;
         let router = db::connect(uri).await?;
         let shard_connections = db::connect_to_shards(&router);
 
@@ -29,11 +31,13 @@ impl ShardedCluster {
         for (shard_name, shard_client) in shard_connections.await? {
             let shard = Shard::new(&shard_name, shard_client.clone(), tx.subscribe()).await?;
             shards.insert(shard_name, shard);
+            shard_count += 1;
         }
 
         Ok(Self {
             router: router.clone(),
             shards: shards,
+            shard_count: shard_count,
             _broadcast_tx: tx,
             _broadcast_rx: rx,
         })
