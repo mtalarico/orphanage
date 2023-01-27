@@ -92,7 +92,7 @@ impl ShardedCluster {
 /// exits the program with an error if client is not pointing at mongos process
 async fn assert_mongos(client: &mongodb::Client) -> mongodb::error::Result<()> {
     if !db::is_mongos(client).await {
-        eprintln!("Error: Must connect to mongos");
+        log::error!("Error: Must connect to mongos");
         std::process::exit(1);
     }
     Ok(())

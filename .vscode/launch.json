@@ -10,34 +10,14 @@
       "name": "Debug executable 'orphanage'",
       "cargo": {
         "args": [
-          "build",
-          "--bin=orphanage",
-          "--package=orphanage",
-          "--uri=mongodb://localhost:27017,localhost:27018",
-          "--db=test",
-          "--coll=test"
-        ],
-        "filter": {
-          "name": "orphanage",
-          "kind": "bin"
-        }
-      },
-      "args": [],
-      "cwd": "${workspaceFolder}"
-    },
-    {
-      "type": "lldb",
-      "request": "launch",
-      "name": "Debug unit tests in executable 'orphanage'",
-      "cargo": {
-        "args": [
-          "test",
-          "--no-run",
-          "--bin=orphanage",
-          "--package=orphanage",
-          "--uri=mongodb://localhost:27017,localhost:27018",
-          "--db=test",
-          "--coll=test"
+          "run",
+          {
+            "value": "--",
+            "quoting": "weak"
+          },
+          "--uri mongodb://localhost:27017,localhost:27018",
+          "--db test",
+          "--coll test"
         ],
         "filter": {
           "name": "orphanage",

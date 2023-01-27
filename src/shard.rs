@@ -66,7 +66,7 @@ impl Shard {
                     .await
                     .expect("error finding ns");
                 if !&colls.contains(&ns.coll) {
-                    println!(
+                    log::debug!(
                         "ns {:?} not found on shard {:?} skipping",
                         &ns.to_string(),
                         &self.name
@@ -84,6 +84,7 @@ impl Shard {
                     let mut orphan: Orphan =
                         bson::from_document(doc).expect("cannot deseralize orphan");
                     orphan.shard = self.name.clone();
+                    log::trace!("{:?}", &orphan);
                     let _ = rsp_chnnl.send(orphan).await;
                 }
             }
@@ -97,10 +98,12 @@ impl Shard {
     ) -> mongodb::Cursor<bson::Document> {
         let projection = bson::doc! { "$project": { "_id": 1 }};
         let filter = bson::doc! { "$match": chunk.filter_for_range()};
-        // println!(
-        //     "searching for chunk {:?} on shard {:?} with filter {:?}",
-        //     chunk, &self.name, &filter
-        // );
+        log::debug!(
+            "searching for chunk {:?} on shard {:?} with filter {:?}",
+            chunk,
+            &self.name,
+            &filter
+        );
         let result = self
             .client
             .database(ns.db.as_str())

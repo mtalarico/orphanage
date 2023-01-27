@@ -13,11 +13,17 @@ mod util;
 
 #[tokio::main]
 async fn main() -> mongodb::error::Result<()> {
+    let mut builder = env_logger::Builder::from_default_env();
+    builder.target(env_logger::Target::Stdout);
+
+    builder.init();
     let args = cli::args();
     let ns = mongodb::Namespace {
         db: args.db,
         coll: args.coll,
     };
+
+    log::info!("searching for orphans on namespace {}", &ns.to_string());
 
     let (tx, mut rx) = mpsc::channel(128);
     let cluster = ShardedCluster::new(&args.uri).await?;
@@ -33,8 +39,8 @@ async fn main() -> mongodb::error::Result<()> {
         counter += 1;
         let shard = orphan.shard.clone();
         orphan_map.get_mut(&shard).unwrap().push(orphan._id);
-        // println!("got orphan {:?}", orphan)
+        log::trace!("got orphan {:?}", orphan)
     }
-    // println!("{:?}", orphan_map);
+    log::trace!("{:?}, total_count: {}", orphan_map, counter);
     Ok(())
 }

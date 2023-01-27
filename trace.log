@@ -1,0 +1,114 @@
+[2023-01-27T14:05:09Z INFO  orphanage] searching for orphans on namespace test.test
+[2023-01-27T14:05:09Z TRACE os_info::imp] macos::current_platform is called
+[2023-01-27T14:05:09Z TRACE os_info::imp] sw_vers command returned "ProductName:\tmacOS\nProductVersion:\t12.6.2\nBuildVersion:\t21G320\n"
+[2023-01-27T14:05:09Z TRACE os_info::imp] Returning Info { os_type: Macos, version: Semantic(12, 6, 2), edition: None, codename: None, bitness: X64 }
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(0), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(1), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(16777216), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(16777217), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(2), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(16777218), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z DEBUG orphanage::db] Connected to mongodb://localhost:27017,localhost:27018
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(3), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(16777219), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(5), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(4), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(6), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(16777220), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(16777221), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(16777222), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(7), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(16777223), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z DEBUG orphanage::db] Connected to mongodb://localhost:27019,localhost:27020,localhost:27021/?replicaSet=shard01
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(8), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(16777224), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(9), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(10), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(16777226), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(16777225), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(11), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(16777227), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z DEBUG orphanage::db] Connected to mongodb://localhost:27022,localhost:27023,localhost:27024/?replicaSet=shard02
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(12), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(16777228), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(13), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(14), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(16777230), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(16777229), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(15), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(16777231), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z DEBUG orphanage::db] Connected to mongodb://localhost:27025,localhost:27026,localhost:27027/?replicaSet=shard03
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(16), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(17), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(16777232), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(18), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(16777233), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(16777234), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(19), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(16777235), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z DEBUG orphanage::db] Connected to mongodb://localhost:27028,localhost:27029,localhost:27030/?replicaSet=shard04
+[2023-01-27T14:05:09Z DEBUG orphanage::shard] ns "test.test" not found on shard "shard01" skipping
+[2023-01-27T14:05:09Z DEBUG orphanage::shard] searching for chunk Chunk { shard: "shard02", min: Document({"a": Int32(200), "b": Int32(90), "c": Int32(40), "d": Int32(21)}), max: Document({"a": Int32(200), "b": Int32(90), "c": Int32(42), "d": Int32(0)}) } on shard "shard04" with filter Document({"$match": Document({"a": Int32(200), "b": Int32(90), "$or": Array([Document({"c": Int32(40), "d": Document({"$gte": Int32(21)})}), Document({"c": Int32(42), "d": Document({"$lt": Int32(0)})}), Document({"c": Document({"$gt": Int32(40), "$lt": Int32(42)})})])})})
+[2023-01-27T14:05:09Z DEBUG orphanage::shard] searching for chunk Chunk { shard: "shard04", min: Document({"a": MinKey, "b": MinKey, "c": MinKey, "d": MinKey}), max: Document({"a": Int32(200), "b": Int32(90), "c": Int32(40), "d": Int32(21)}) } on shard "shard02" with filter Document({"$match": Document({"$or": Array([Document({"a": MinKey, "b": MinKey, "c": MinKey, "d": Document({"$gte": MinKey})}), Document({"a": Int32(200), "b": Int32(90), "c": Int32(40), "d": Document({"$lt": Int32(21)})}), Document({"a": MinKey, "b": MinKey, "c": Document({"$gt": MinKey})}), Document({"a": Int32(200), "b": Int32(90), "c": Document({"$lt": Int32(40)})}), Document({"a": MinKey, "b": Document({"$gt": MinKey})}), Document({"a": Int32(200), "b": Document({"$lt": Int32(90)})}), Document({"a": Document({"$gt": MinKey, "$lt": Int32(200)})})])})})
+[2023-01-27T14:05:09Z DEBUG orphanage::shard] searching for chunk Chunk { shard: "shard04", min: Document({"a": MinKey, "b": MinKey, "c": MinKey, "d": MinKey}), max: Document({"a": Int32(200), "b": Int32(90), "c": Int32(40), "d": Int32(21)}) } on shard "shard03" with filter Document({"$match": Document({"$or": Array([Document({"a": MinKey, "b": MinKey, "c": MinKey, "d": Document({"$gte": MinKey})}), Document({"a": Int32(200), "b": Int32(90), "c": Int32(40), "d": Document({"$lt": Int32(21)})}), Document({"a": MinKey, "b": MinKey, "c": Document({"$gt": MinKey})}), Document({"a": Int32(200), "b": Int32(90), "c": Document({"$lt": Int32(40)})}), Document({"a": MinKey, "b": Document({"$gt": MinKey})}), Document({"a": Int32(200), "b": Document({"$lt": Int32(90)})}), Document({"a": Document({"$gt": MinKey, "$lt": Int32(200)})})])})})
+[2023-01-27T14:05:09Z DEBUG orphanage::shard] searching for chunk Chunk { shard: "shard04", min: Document({"a": MinKey, "b": MinKey, "c": MinKey, "d": MinKey}), max: Document({"a": Int32(200), "b": Int32(90), "c": Int32(40), "d": Int32(21)}) } on shard "shard01" with filter Document({"$match": Document({"$or": Array([Document({"a": MinKey, "b": MinKey, "c": MinKey, "d": Document({"$gte": MinKey})}), Document({"a": Int32(200), "b": Int32(90), "c": Int32(40), "d": Document({"$lt": Int32(21)})}), Document({"a": MinKey, "b": MinKey, "c": Document({"$gt": MinKey})}), Document({"a": Int32(200), "b": Int32(90), "c": Document({"$lt": Int32(40)})}), Document({"a": MinKey, "b": Document({"$gt": MinKey})}), Document({"a": Int32(200), "b": Document({"$lt": Int32(90)})}), Document({"a": Document({"$gt": MinKey, "$lt": Int32(200)})})])})})
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(20), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(16777236), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(21), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(16777237), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z DEBUG orphanage::shard] ns "test.test" not found on shard "shard01" skipping
+[2023-01-27T14:05:09Z DEBUG orphanage::shard] searching for chunk Chunk { shard: "shard02", min: Document({"a": Int32(200), "b": Int32(90), "c": Int32(40), "d": Int32(21)}), max: Document({"a": Int32(200), "b": Int32(90), "c": Int32(42), "d": Int32(0)}) } on shard "shard01" with filter Document({"$match": Document({"a": Int32(200), "b": Int32(90), "$or": Array([Document({"c": Int32(40), "d": Document({"$gte": Int32(21)})}), Document({"c": Int32(42), "d": Document({"$lt": Int32(0)})}), Document({"c": Document({"$gt": Int32(40), "$lt": Int32(42)})})])})})
+[2023-01-27T14:05:09Z DEBUG orphanage::shard] ns "test.test" not found on shard "shard01" skipping
+[2023-01-27T14:05:09Z DEBUG orphanage::shard] searching for chunk Chunk { shard: "shard03", min: Document({"a": Int32(200), "b": Int32(90), "c": Int32(42), "d": Int32(0)}), max: Document({"a": MaxKey, "b": MaxKey, "c": MaxKey, "d": MaxKey}) } on shard "shard01" with filter Document({"$match": Document({"$or": Array([Document({"a": Int32(200), "b": Int32(90), "c": Int32(42), "d": Document({"$gte": Int32(0)})}), Document({"a": MaxKey, "b": MaxKey, "c": MaxKey, "d": Document({"$lt": MaxKey})}), Document({"a": Int32(200), "b": Int32(90), "c": Document({"$gt": Int32(42)})}), Document({"a": MaxKey, "b": MaxKey, "c": Document({"$lt": MaxKey})}), Document({"a": Int32(200), "b": Document({"$gt": Int32(90)})}), Document({"a": MaxKey, "b": Document({"$lt": MaxKey})}), Document({"a": Document({"$gt": Int32(200), "$lt": MaxKey})})])})})
+[2023-01-27T14:05:09Z DEBUG orphanage::shard] searching for chunk Chunk { shard: "shard02", min: Document({"a": Int32(200), "b": Int32(90), "c": Int32(40), "d": Int32(21)}), max: Document({"a": Int32(200), "b": Int32(90), "c": Int32(42), "d": Int32(0)}) } on shard "shard03" with filter Document({"$match": Document({"a": Int32(200), "b": Int32(90), "$or": Array([Document({"c": Int32(40), "d": Document({"$gte": Int32(21)})}), Document({"c": Int32(42), "d": Document({"$lt": Int32(0)})}), Document({"c": Document({"$gt": Int32(40), "$lt": Int32(42)})})])})})
+[2023-01-27T14:05:09Z DEBUG orphanage::shard] searching for chunk Chunk { shard: "shard03", min: Document({"a": Int32(200), "b": Int32(90), "c": Int32(42), "d": Int32(0)}), max: Document({"a": MaxKey, "b": MaxKey, "c": MaxKey, "d": MaxKey}) } on shard "shard04" with filter Document({"$match": Document({"$or": Array([Document({"a": Int32(200), "b": Int32(90), "c": Int32(42), "d": Document({"$gte": Int32(0)})}), Document({"a": MaxKey, "b": MaxKey, "c": MaxKey, "d": Document({"$lt": MaxKey})}), Document({"a": Int32(200), "b": Int32(90), "c": Document({"$gt": Int32(42)})}), Document({"a": MaxKey, "b": MaxKey, "c": Document({"$lt": MaxKey})}), Document({"a": Int32(200), "b": Document({"$gt": Int32(90)})}), Document({"a": MaxKey, "b": Document({"$lt": MaxKey})}), Document({"a": Document({"$gt": Int32(200), "$lt": MaxKey})})])})})
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(22), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] registering event source with poller: token=Token(16777238), interests=READABLE | WRITABLE
+[2023-01-27T14:05:09Z DEBUG orphanage::shard] searching for chunk Chunk { shard: "shard03", min: Document({"a": Int32(200), "b": Int32(90), "c": Int32(42), "d": Int32(0)}), max: Document({"a": MaxKey, "b": MaxKey, "c": MaxKey, "d": MaxKey}) } on shard "shard02" with filter Document({"$match": Document({"$or": Array([Document({"a": Int32(200), "b": Int32(90), "c": Int32(42), "d": Document({"$gte": Int32(0)})}), Document({"a": MaxKey, "b": MaxKey, "c": MaxKey, "d": Document({"$lt": MaxKey})}), Document({"a": Int32(200), "b": Int32(90), "c": Document({"$gt": Int32(42)})}), Document({"a": MaxKey, "b": MaxKey, "c": Document({"$lt": MaxKey})}), Document({"a": Int32(200), "b": Document({"$gt": Int32(90)})}), Document({"a": MaxKey, "b": Document({"$lt": MaxKey})}), Document({"a": Document({"$gt": Int32(200), "$lt": MaxKey})})])})})
+[2023-01-27T14:05:09Z TRACE orphanage] {"shard03": [], "shard01": [], "shard02": [], "shard04": []}, total_count: 0
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller
+[2023-01-27T14:05:09Z TRACE mio::poll] deregistering event source from poller

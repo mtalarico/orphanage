@@ -14,7 +14,7 @@ pub async fn connect(uri: &str) -> mongodb::error::Result<mongodb::Client> {
         .database("admin")
         .run_command(bson::doc! {"ping": 1}, None)
         .await?;
-    println!("Connected to {}", uri);
+    log::debug!("Connected to {}", uri);
     Ok(client)
 }
 

@@ -11,3 +11,5 @@ mongodb = { version = "2", features = ["tokio-runtime"] }
 tokio = { version = "1", features = ["full"] }
 futures = { version = "0.3" }
 serde = { version = "1" }
+log = { version = "0" }
+env_logger = { version = "0" }
