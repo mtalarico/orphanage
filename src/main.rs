@@ -1,46 +1,42 @@
-use std::collections::HashMap;
-
-use cluster::ShardedCluster;
-use mongodb::bson;
-use tokio::sync::mpsc;
-
 mod chunk;
 mod cli;
 mod cluster;
 mod db;
+mod orphan;
 mod shard;
 mod util;
 
-#[tokio::main]
-async fn main() -> mongodb::error::Result<()> {
+const BUFFER_SIZE: usize = 100_000;
+
+fn init_logging() {
     let mut builder = env_logger::Builder::from_default_env();
     builder.target(env_logger::Target::Stdout);
-
     builder.init();
+}
+
+#[tokio::main]
+async fn main() -> mongodb::error::Result<()> {
+    init_logging();
+
     let args = cli::args();
     let ns = mongodb::Namespace {
         db: args.db,
         coll: args.coll,
     };
 
-    log::info!("searching for orphans on namespace {}", &ns.to_string());
+    // TODO larger channel size
+    let cluster = cluster::Sharded::new(&args.uri).await?;
+    let orphans = cluster.find_orphaned(&ns).await?;
 
-    let (tx, mut rx) = mpsc::channel(128);
-    let cluster = ShardedCluster::new(&args.uri).await?;
-    let mut orphan_map: HashMap<String, Vec<bson::oid::ObjectId>> =
-        HashMap::with_capacity(cluster.shard_count);
-    for shard in cluster.shards.keys() {
-        orphan_map.insert(shard.clone(), Vec::<bson::oid::ObjectId>::new());
+    // log::trace!("{:?}", orphans);
+    log::info!(
+        "{:?}, total_count: {}",
+        orphans.get_shard_totals(),
+        orphans.get_cluster_total()
+    );
+    if args.verbose {
+        log::info!("{:?}", orphans.get_shard_map());
     }
 
-    tokio::spawn(async move { cluster.find_orphaned(ns.clone(), tx).await });
-    let mut counter = 0;
-    while let Some(orphan) = rx.recv().await {
-        counter += 1;
-        let shard = orphan.shard.clone();
-        orphan_map.get_mut(&shard).unwrap().push(orphan._id);
-        log::trace!("got orphan {:?}", orphan)
-    }
-    log::trace!("{:?}, total_count: {}", orphan_map, counter);
     Ok(())
 }

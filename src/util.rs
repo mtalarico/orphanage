@@ -2,10 +2,33 @@ use mongodb::bson;
 
 use crate::db;
 
-/// Convert internal connection string format (rs/host:port,...,host:port) to uri format (mongodb://host:port,...,host:port/?replicaSet=name)
-pub fn update_connection_string(original: &str) -> String {
-    let parts: Vec<&str> = original.split('/').collect();
-    return ["mongodb://", parts[1], "/?replicaSet=", parts[0]].join("");
+/// Convert internal connection string format (rs/host:port,...,host:port) to uri format (mongodb://[username:password@]host1[:port1][,...hostN[:portN]][/[defaultauthdb][?options]])
+pub fn update_connection_string(cluster: &str, shard: &str) -> String {
+    let hosts = get_host_from_connection_string(cluster);
+    let shard_nodes = shard.split('/').nth(1).unwrap();
+    let result = cluster.clone().replace(hosts, shard_nodes);
+    if cluster.contains("+srv") {
+        return result.replace("+srv", "");
+    }
+
+    result
+}
+
+fn get_host_from_connection_string(uri: &str) -> &str {
+    let cut_left: &str;
+    if uri.contains('@') {
+        cut_left = uri.split("@").nth(1).expect("there is nothing after auth?");
+    } else {
+        cut_left = uri
+            .split("://")
+            .nth(1)
+            .expect("there is nothing after protocol?");
+    }
+    let cut_right = cut_left
+        .split("/")
+        .nth(0)
+        .expect("theres nothing before authdb/parameters?");
+    cut_right
 }
 
 /// There has to be a better way to do it, but this is the quick and dirty right now
@@ -52,5 +75,65 @@ async fn get_uuid_for_ns(
     match uuid {
         bson::Bson::Binary(bin) => Ok(bin.to_owned()),
         _ => panic!("uuid is not uuid type?"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn convert_plain_connection_string() {
+        let cluster = "mongodb://localhost:27016";
+        let shard = "shard01/localhost:27017,localhost:27018,localhost:27019";
+        let expected = "mongodb://localhost:27017,localhost:27018,localhost:27019";
+        let actual = super::update_connection_string(cluster, shard);
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn convert_connection_string_options() {
+        let cluster = "mongodb://localhost:27016/?readPreference=secondary&w=majority";
+        let shard = "shard01/localhost:27017,localhost:27018,localhost:27019";
+        let expected = "mongodb://localhost:27017,localhost:27018,localhost:27019/?readPreference=secondary&w=majority";
+        let actual = super::update_connection_string(cluster, shard);
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn convert_connection_string_auth() {
+        let cluster = "mongodb://test:test@localhost:27016";
+        let shard = "shard01/localhost:27017,localhost:27018,localhost:27019";
+        let expected = "mongodb://test:test@localhost:27017,localhost:27018,localhost:27019";
+        let actual = super::update_connection_string(cluster, shard);
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn convert_connection_string_auth_and_options() {
+        let cluster = "mongodb://test:test@localhost:27016/?readPreference=secondary&w=majority";
+        let shard = "shard01/localhost:27017,localhost:27018,localhost:27019";
+        let expected = "mongodb://test:test@localhost:27017,localhost:27018,localhost:27019/?readPreference=secondary&w=majority";
+        let actual = super::update_connection_string(cluster, shard);
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn convert_connection_string_auth_and_default_db_and_options() {
+        let cluster =
+            "mongodb://test:test@localhost:27016/admin?readPreference=secondary&w=majority";
+        let shard = "shard01/localhost:27017,localhost:27018,localhost:27019";
+        let expected = "mongodb://test:test@localhost:27017,localhost:27018,localhost:27019/admin?readPreference=secondary&w=majority";
+        let actual = super::update_connection_string(cluster, shard);
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn convert_srv_conn_str() {
+        let cluster =
+            "mongodb+srv://test:test@playground.ah123.mongodb.net/admin?readPreference=secondary&w=majority";
+        let shard = "shard01/somehost1:27017,somehost2:27018,somehost3:27019";
+        let expected = "mongodb://test:test@somehost1:27017,somehost2:27018,somehost3:27019/admin?readPreference=secondary&w=majority";
+        let actual = super::update_connection_string(cluster, shard);
+        assert_eq!(expected, actual);
     }
 }

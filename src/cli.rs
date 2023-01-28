@@ -15,6 +15,10 @@ pub struct Args {
     /// Collection name
     #[arg(short, long)]
     pub coll: String,
+
+    /// Verbose
+    #[arg(short, long)]
+    pub verbose: bool,
 }
 
 pub fn args() -> Args {
