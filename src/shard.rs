@@ -9,9 +9,9 @@ pub struct Shard {
 }
 
 impl Shard {
-    pub fn new(name: &str, client: mongodb::Client) -> Self {
+    pub fn new(name: String, client: mongodb::Client) -> Self {
         Self {
-            name: String::from(name),
+            name,
             client: client.clone(),
         }
     }

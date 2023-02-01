@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::db::Id;
 
+#[derive(Debug)]
 pub struct Orphans {
     total_count: usize,
     shard_map: HashMap<String, Vec<Id>>,

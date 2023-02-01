@@ -28,15 +28,40 @@ pub async fn get_version(client: &mongodb::Client) -> mongodb::error::Result<Str
     Ok(String::from(version))
 }
 
+pub async fn find_id_range(
+    client: &mongodb::Client,
+    ns: &mongodb::Namespace,
+    hint: &bson::Document,
+    min: &bson::Document,
+    max: &bson::Document,
+) -> mongodb::Cursor<Id> {
+    let index_hint = mongodb::options::Hint::Keys(hint.to_owned());
+    let projection = bson::doc! { "_id": 1 };
+    let options = mongodb::options::FindOptions::builder()
+        .min(min.to_owned())
+        .max(max.to_owned())
+        .hint(index_hint)
+        .projection(projection)
+        .build();
+    let result = client
+        .database(&ns.db)
+        .collection::<Id>(&ns.coll)
+        .find(None, options)
+        .await
+        .expect("cannot execute find");
+    result
+}
+
 pub mod mongos {
     use std::collections::HashMap;
 
+    use futures::future::join_all;
     use mongodb::bson;
     use serde::{Deserialize, Serialize};
 
     use crate::{chunk::Chunk, util};
 
-    use super::{connect, Id};
+    use super::connect;
 
     #[derive(Debug, Clone, Deserialize, Serialize)]
     struct ShardDoc {
@@ -46,13 +71,17 @@ pub mod mongos {
     }
 
     /// connect to all shards of a given mongos client, returning a hashmap of shard names to clients
+    ///
+    /// attempts to connect to shards in parallel
     pub async fn connect_to_shards(
         mongos: &mongodb::Client,
         uri: &str,
     ) -> mongodb::error::Result<HashMap<String, mongodb::Client>> {
         assert_mongos(&mongos).await?;
 
-        let mut shard_map = HashMap::new();
+        let mut shard_names = Vec::new();
+        let mut tasks = Vec::new();
+
         let mut shards_cursor = mongos
             .database("config")
             .collection::<ShardDoc>("shards")
@@ -60,14 +89,27 @@ pub mod mongos {
             .await?;
         while shards_cursor.advance().await? {
             let shard = shards_cursor.deserialize_current()?;
-            let uri = util::update_connection_string(uri, shard.host.as_str());
-            let client = connect(uri.as_str());
-
-            shard_map.insert(shard._id, client.await?);
+            let updated_uri = util::update_connection_string(uri, shard.host.as_str());
+            shard_names.push(shard._id);
+            tasks.push(tokio::spawn(async move {
+                log::debug!("Connecting to {}", &updated_uri);
+                connect(updated_uri.as_str()).await.unwrap()
+            }));
         }
+
+        // wait for all tasks to finish, panics if any connection issue to any of the shards -- note join_all is guarenteed to return in the order provided
+        let connected_client = join_all(tasks)
+            .await
+            .into_iter()
+            .map(|x| x.unwrap())
+            .collect::<Vec<mongodb::Client>>();
+
+        let zipped = shard_names.into_iter().zip(connected_client.into_iter());
+        let shard_map = HashMap::from_iter(zipped);
         Ok(shard_map)
     }
 
+    /// return a cursor to the chunks collection, optionally with a filter
     pub async fn get_chunk_cursor(
         mongos: &mongodb::Client,
         filter: Option<bson::Document>,
@@ -98,27 +140,20 @@ pub mod mongos {
         true
     }
 
+    /// get a document for the shard key used to shard a collection
     pub async fn get_shard_key(
         mongos: &mongodb::Client,
         ns: &mongodb::Namespace,
     ) -> mongodb::error::Result<bson::Document> {
-        assert_mongos(&mongos)
-            .await
-            .expect("problem checking mongos");
+        assert_mongos(&mongos).await?;
         let filter = bson::doc! { "_id": ns.to_string() };
-        log::debug!("{}", &filter);
         let doc = mongos
             .database("config")
             .collection::<bson::Document>("collections")
             .find_one(filter, None)
-            .await?;
-        Ok(doc
-            .expect("ns does not exist in config.collections")
-            .get("key")
-            .unwrap()
-            .as_document()
-            .unwrap()
-            .to_owned())
+            .await?
+            .unwrap();
+        Ok(doc.get("key").unwrap().as_document().unwrap().to_owned())
     }
 
     /// exits the program with an error if client is not pointing at mongos process
@@ -128,28 +163,5 @@ pub mod mongos {
             std::process::exit(1);
         }
         Ok(())
-    }
-
-    pub async fn find_chunk_ids(
-        client: &mongodb::Client,
-        ns: &mongodb::Namespace,
-        shard_key: &bson::Document,
-        chunk: &Chunk,
-    ) -> mongodb::Cursor<Id> {
-        let index_hint = mongodb::options::Hint::Keys(shard_key.to_owned());
-        let projection = bson::doc! { "_id": 1 };
-        let options = mongodb::options::FindOptions::builder()
-            .min(chunk.min.to_owned())
-            .max(chunk.max.to_owned())
-            .hint(index_hint)
-            .projection(projection)
-            .build();
-        let result = client
-            .database(&ns.db)
-            .collection::<Id>(&ns.coll)
-            .find(None, options)
-            .await
-            .expect("cannot execute find");
-        result
     }
 }

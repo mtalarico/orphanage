@@ -3,7 +3,6 @@ mod cli;
 mod cluster;
 mod db;
 mod orphan;
-mod shard;
 mod util;
 
 const BUFFER_SIZE: usize = 100_000;
@@ -19,16 +18,16 @@ async fn main() -> mongodb::error::Result<()> {
     init_logging();
 
     let args = cli::args();
+
+    let cluster = cluster::ShardedCluster::new(&args.uri).await?;
+
     let ns = mongodb::Namespace {
         db: args.db,
         coll: args.coll,
     };
-
-    // TODO larger channel size
-    let cluster = cluster::Sharded::new(&args.uri).await?;
     let orphans = cluster.find_orphaned(&ns).await?;
 
-    // log::trace!("{:?}", orphans);
+    log::trace!("{:?}", orphans);
     log::info!(
         "{:?}, total_count: {}",
         orphans.get_shard_totals(),

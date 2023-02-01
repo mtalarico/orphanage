@@ -1,15 +1,19 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
-use mongodb::bson;
+use futures::{future::join_all, StreamExt};
 
-use crate::{chunk::Chunk, db, orphan::Orphans, shard::Shard, util, BUFFER_SIZE};
+use crate::{
+    db::{self, Id},
+    orphan::Orphans,
+    util, BUFFER_SIZE,
+};
 
 // pub struct ClusterClient(Standalone, ReplicaSet, Sharded);
 
-pub struct Sharded {
+#[derive(Debug)]
+pub struct ShardedCluster {
     pub router: mongodb::Client,
-    pub shards: HashMap<String, Shard>,
-    pub shard_count: usize,
+    pub shards: HashMap<String, mongodb::Client>,
 }
 
 // pub struct Standalone {
@@ -20,64 +24,90 @@ pub struct Sharded {
 //     pub client: mongodb::Client,
 // }
 
-impl Sharded {
+impl ShardedCluster {
     /// return a new sharded cluster, containing both a connection to the specified mongos pool and connection pools to each shard
     pub async fn new(uri: &str) -> mongodb::error::Result<Self> {
         let router = db::connect(uri).await?;
-        let shard_connections = db::mongos::connect_to_shards(&router, uri).await?;
-        let shard_count = shard_connections.len();
+        let shards = db::mongos::connect_to_shards(&router, uri).await?;
 
-        let shards = HashMap::from_iter(shard_connections.iter().map(|(name, client)| {
-            (
-                name.to_owned(),
-                Shard::new(name.as_str(), client.to_owned()),
-            )
-        }));
-
-        Ok(Self {
-            router,
-            shards,
-            shard_count,
-        })
+        Ok(Self { router, shards })
     }
+
+    /// get the number of shards currently connected to
+    // pub fn get_shard_count(&self) -> usize {
+    //     self.shards.len()
+    // }
 
     /// return orphans -- a struct that has summary data and a verbose map of orphans for each shard
     pub async fn find_orphaned(&self, ns: &mongodb::Namespace) -> mongodb::error::Result<Orphans> {
         log::info!("searching for orphans on namespace {}", &ns.to_string());
+        let ns = Arc::new(ns.to_owned());
+
+        let router_ref = self.router.clone();
+        let ns_ref = ns.clone();
+        let shard_key_task = tokio::spawn(async move {
+            db::mongos::get_shard_key(&router_ref, &ns_ref)
+                .await
+                .unwrap()
+        });
+
+        let router_ref = self.router.clone();
+        let ns_ref = ns.clone();
+        let chunks_task = tokio::spawn(async move {
+            let filter = Some(util::get_ns_filter(&router_ref, &ns_ref).await.unwrap());
+            db::mongos::get_chunk_cursor(&router_ref, filter)
+                .await
+                .unwrap()
+        });
 
         let mut orphans = Orphans::new(self.shards.keys().collect::<Vec<&String>>());
+        let ns = Arc::new(ns.clone());
 
-        let shard_key = db::mongos::get_shard_key(&self.router, &ns).await?;
+        let (shard_key_res, chunks_cursor_res) = tokio::join!(shard_key_task, chunks_task);
+        let shard_key = Arc::new(shard_key_res.unwrap());
+        log::info!("shard key for ns {} is {}", &ns, &shard_key.to_string());
+        let mut chunks_cursor = chunks_cursor_res.unwrap();
 
-        // orphans.add(&shard.clone(), orphan.clone());
-        // log::trace!("got orphan {:?}", &orphan);
+        let (tx, mut rx) = tokio::sync::mpsc::channel::<(String, Id)>(BUFFER_SIZE);
+        let orphans = tokio::spawn(async move {
+            while let Some((shard, orphan_id)) = rx.recv().await {
+                log::debug!("adding {:?} to shard {}", &orphan_id, &shard);
+                orphans.add(&shard, orphan_id);
+            }
+            orphans
+        });
+
+        let mut tasks = Vec::new();
+        while let Some(chunk) = chunks_cursor.next().await.transpose().unwrap() {
+            let shards = self.shards.clone();
+            let chunk = Arc::new(chunk);
+
+            let shards_minus_self = shards
+                .into_iter()
+                .filter(|(shard_name, _)| shard_name.to_owned() != chunk.clone().shard);
+            for (shard_name, client) in shards_minus_self {
+                let ns = ns.clone();
+                let shard_key = shard_key.clone();
+                let chunk = chunk.clone();
+                let tx = tx.clone();
+                let handle = tokio::spawn(async move {
+                    let mut chunk_ids =
+                        db::find_id_range(&client, &ns, &shard_key.clone(), &chunk.min, &chunk.max)
+                            .await;
+                    while let Some(id) = chunk_ids.next().await {
+                        log::debug!("found {:?} on shard {}", &id.clone().unwrap(), &shard_name);
+                        tx.send((shard_name.clone(), id.unwrap())).await.unwrap();
+                    }
+                    drop(tx);
+                });
+                tasks.push(handle);
+            }
+        }
+        join_all(tasks).await;
+        // drop the original tx that was cloned and is no longer needed
+        drop(tx);
+        let orphans = orphans.await.unwrap();
 
         Ok(orphans)
-    }
-
-    /// push an optionally filtered stream of chunks over a channel
-    async fn stream_chunks(
-        &self,
-        ns: Option<&mongodb::Namespace>,
-        tx: tokio::sync::mpsc::Sender<Chunk>,
-    ) {
-        let mut chunk_cursor = Self::get_chunks_cursor(&self, ns).await.unwrap();
-        while chunk_cursor.advance().await.unwrap() {
-            let chunk = chunk_cursor.deserialize_current().unwrap();
-            tx.send(chunk).await.unwrap();
-        }
-    }
-
-    /// get a cursor iterating over the chunks collection, optionally filtering by namespace (supports both ns and uuid verions)
-    async fn get_chunks_cursor(
-        &self,
-        ns: Option<&mongodb::Namespace>,
-    ) -> mongodb::error::Result<mongodb::Cursor<Chunk>> {
-        let mut filter: Option<bson::Document> = None;
-        if let Some(ns) = ns {
-            filter = Some(util::get_ns_filter(&self.router, &ns).await?);
-        }
-        let cursor = db::mongos::get_chunk_cursor(&self.router, filter).await?;
-        Ok(cursor)
     }
 }
