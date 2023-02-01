@@ -1,6 +1,6 @@
 # orphanage
 
-**THIS PROGRAM IS CURRENTLY IN AN EXPIRAMENTAL STATE AND IS NOT INTENDED TO BE RAN IN PRODUCTION**
+**THIS PROGRAM IS CURRENTLY IN AN EXPERIMENTAL STATE AND IS NOT INTENDED TO BE RUN IN PRODUCTION**
 
 
 This is an incomplete rewrite of https://github.com/mongodb/support-tools/tree/master/orphanage in rust
