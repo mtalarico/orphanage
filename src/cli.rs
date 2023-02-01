@@ -2,9 +2,9 @@ use clap::Parser;
 
 /// Simple program to greet a person
 #[derive(Parser)]
-#[command(author="Michael T", version = "1.0", about="For docs that were left at the doorstep", long_about = None)]
+#[command(author="Michael T", version = "1.0", about="Find orphan documents on your sharded MongoDB cluster", long_about = None)]
 pub struct Args {
-    /// URI of MongoDB cluster, either including credentials or not
+    /// URI of MongoDB cluster, refer to https://www.mongodb.com/docs/manual/reference/connection-string/ for format
     #[arg(long)]
     pub uri: String,
 
@@ -16,8 +16,8 @@ pub struct Args {
     #[arg(short, long)]
     pub coll: String,
 
-    /// Verbose
-    #[arg(short, long)]
+    /// Print individual IDs of each orphan doc in each shard -- *warning* this may produce signficant output
+    #[arg(long)]
     pub verbose: bool,
 }
 
