@@ -6,9 +6,16 @@ use crate::db;
 pub fn update_connection_string(cluster: &str, shard: &str) -> String {
     let hosts = get_host_from_connection_string(cluster);
     let shard_nodes = shard.split('/').nth(1).unwrap();
-    let result = cluster.clone().replace(hosts, shard_nodes);
+    let mut result = cluster.clone().replace(hosts, shard_nodes);
+
+    // mongos needs to use an alias localThreshold, if that is the case replace the alias
+    if cluster.contains("localThreshold") {
+        result = result.replace("localThreshold", "localThresholdMS");
+    }
+
+    // we are not connecting over srv to the shards, remove it from the new uri
     if cluster.contains("+srv") {
-        return result.replace("+srv", "");
+        result = result.replace("+srv", "");
     }
 
     result
@@ -16,6 +23,7 @@ pub fn update_connection_string(cluster: &str, shard: &str) -> String {
 
 fn get_host_from_connection_string(uri: &str) -> &str {
     let cut_left: &str;
+    // if they provided inline auth, split after that -- else take after the protocol
     if uri.contains('@') {
         cut_left = uri.split("@").nth(1).expect("there is nothing after auth?");
     } else {

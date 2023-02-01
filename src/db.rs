@@ -6,7 +6,7 @@ pub struct Id {
     _id: bson::oid::ObjectId,
 }
 
-/// connects to instance at uri, specify options and credentials according to mongodb docs
+/// connects to instance at uri, specify options and credentials according to mongodb docs (https://www.mongodb.com/docs/manual/reference/connection-string/)
 pub async fn connect(uri: &str) -> mongodb::error::Result<mongodb::Client> {
     let mut options = mongodb::options::ClientOptions::parse(uri).await?;
     options.app_name = Some("orphanage".to_string());
@@ -19,6 +19,7 @@ pub async fn connect(uri: &str) -> mongodb::error::Result<mongodb::Client> {
     Ok(client)
 }
 
+/// get the reported server version from serverStatus
 pub async fn get_version(client: &mongodb::Client) -> mongodb::error::Result<String> {
     let doc = client
         .database("admin")
@@ -28,6 +29,7 @@ pub async fn get_version(client: &mongodb::Client) -> mongodb::error::Result<Str
     Ok(String::from(version))
 }
 
+/// get a cursor to all the document ids in a given range (using a given index)
 pub async fn find_id_range(
     client: &mongodb::Client,
     ns: &mongodb::Namespace,
@@ -55,13 +57,15 @@ pub async fn find_id_range(
 pub mod mongos {
     use std::collections::HashMap;
 
-    use futures::future::join_all;
+    use futures::{future::join_all, TryStreamExt};
     use mongodb::bson;
     use serde::{Deserialize, Serialize};
 
     use crate::{chunk::Chunk, util};
 
     use super::connect;
+
+    const SHARD_STEADY_STATE: usize = 1;
 
     #[derive(Debug, Clone, Deserialize, Serialize)]
     struct ShardDoc {
@@ -87,9 +91,14 @@ pub mod mongos {
             .collection::<ShardDoc>("shards")
             .find(None, None)
             .await?;
-        while shards_cursor.advance().await? {
-            let shard = shards_cursor.deserialize_current()?;
+        while let Some(shard) = shards_cursor.try_next().await? {
+            if shard.state != SHARD_STEADY_STATE {
+                log::warn!("skipping shard {}, is not in a steady state", shard._id);
+                continue;
+            }
             let updated_uri = util::update_connection_string(uri, shard.host.as_str());
+
+            // maintaining two separate ordered lists so clients will be connected to in parallel tasks
             shard_names.push(shard._id);
             tasks.push(tokio::spawn(async move {
                 log::debug!("Connecting to {}", &updated_uri);
@@ -97,7 +106,8 @@ pub mod mongos {
             }));
         }
 
-        // wait for all tasks to finish, panics if any connection issue to any of the shards -- note join_all is guarenteed to return in the order provided
+        // wait for all tasks to finish, panics if any connection issue to any of the shards
+        // note that join_all is guarenteed to return in the provided order so no concern zipping arrays back up
         let connected_client = join_all(tasks)
             .await
             .into_iter()
@@ -125,15 +135,15 @@ pub mod mongos {
         Ok(cursor)
     }
 
-    /// returns true if connected client is pointed at mongos process, false or error
+    /// returns true if connected client is pointed at mongos process, false if not. panics if error is not related to isdbgrid
     pub async fn is_mongos(client: &mongodb::Client) -> bool {
         let res = client
             .database("admin")
             .run_command(bson::doc! {"isdbgrid": 1}, None)
             .await;
-        if res.is_err() {
-            if !util::isdbgrid_error(res.err().unwrap()) {
-                panic!("an error occured checking whether client is mongos");
+        if let Err(err) = res {
+            if !util::isdbgrid_error(err) {
+                panic!("an unrelated error occured checking whether client is mongos");
             }
             return false;
         }
@@ -146,6 +156,7 @@ pub mod mongos {
         ns: &mongodb::Namespace,
     ) -> mongodb::error::Result<bson::Document> {
         assert_mongos(&mongos).await?;
+
         let filter = bson::doc! { "_id": ns.to_string() };
         let doc = mongos
             .database("config")
@@ -156,7 +167,7 @@ pub mod mongos {
         Ok(doc.get("key").unwrap().as_document().unwrap().to_owned())
     }
 
-    /// exits the program with an error if client is not pointing at mongos process
+    /// exits the program with an error if client is not one or more mongos process
     pub async fn assert_mongos(client: &mongodb::Client) -> mongodb::error::Result<()> {
         if !is_mongos(client).await {
             log::error!("Error: Must connect to mongos");

@@ -1,10 +1,10 @@
 use std::{collections::HashMap, sync::Arc};
 
-use futures::{future::join_all, StreamExt};
+use futures::{future::join_all, TryStreamExt};
 
 use crate::{
-    db::{self, Id},
-    orphan::Orphans,
+    db::{self},
+    orphan::{Orphan, OrphanSummary},
     util, BUFFER_SIZE,
 };
 
@@ -25,7 +25,7 @@ pub struct ShardedCluster {
 // }
 
 impl ShardedCluster {
-    /// return a new sharded cluster, containing both a connection to the specified mongos pool and connection pools to each shard
+    /// return a struct containing both a connection to the specified routers and connections to each shard
     pub async fn new(uri: &str) -> mongodb::error::Result<Self> {
         let router = db::connect(uri).await?;
         let shards = db::mongos::connect_to_shards(&router, uri).await?;
@@ -39,10 +39,14 @@ impl ShardedCluster {
     // }
 
     /// return orphans -- a struct that has summary data and a verbose map of orphans for each shard
-    pub async fn find_orphaned(&self, ns: &mongodb::Namespace) -> mongodb::error::Result<Orphans> {
+    pub async fn find_orphaned(
+        &self,
+        ns: &mongodb::Namespace,
+    ) -> mongodb::error::Result<OrphanSummary> {
         log::info!("searching for orphans on namespace {}", &ns.to_string());
         let ns = Arc::new(ns.to_owned());
 
+        // get the shard key in a background task
         let router_ref = self.router.clone();
         let ns_ref = ns.clone();
         let shard_key_task = tokio::spawn(async move {
@@ -51,6 +55,7 @@ impl ShardedCluster {
                 .unwrap()
         });
 
+        // get the chunk cursor in a background task
         let router_ref = self.router.clone();
         let ns_ref = ns.clone();
         let chunks_task = tokio::spawn(async move {
@@ -60,25 +65,26 @@ impl ShardedCluster {
                 .unwrap()
         });
 
-        let mut orphans = Orphans::new(self.shards.keys().collect::<Vec<&String>>());
-        let ns = Arc::new(ns.clone());
-
+        // join threads back together
         let (shard_key_res, chunks_cursor_res) = tokio::join!(shard_key_task, chunks_task);
         let shard_key = Arc::new(shard_key_res.unwrap());
-        log::info!("shard key for ns {} is {}", &ns, &shard_key.to_string());
         let mut chunks_cursor = chunks_cursor_res.unwrap();
+        log::info!("shard key for ns {} is {}", &ns, &shard_key.to_string());
 
-        let (tx, mut rx) = tokio::sync::mpsc::channel::<(String, Id)>(BUFFER_SIZE);
-        let orphans = tokio::spawn(async move {
-            while let Some((shard, orphan_id)) = rx.recv().await {
-                log::debug!("adding {:?} to shard {}", &orphan_id, &shard);
-                orphans.add(&shard, orphan_id);
+        // create a multi-producer single consumer channel and listen for orphans, adding them to the summary as they are processed
+        let (tx, mut rx) = tokio::sync::mpsc::channel::<Orphan>(BUFFER_SIZE);
+        let mut summary = OrphanSummary::new(self.shards.keys().collect::<Vec<&String>>());
+        let handle = tokio::spawn(async move {
+            while let Some(orphan) = rx.recv().await {
+                log::debug!("adding orphan {:?}", &orphan);
+                summary.add(orphan);
             }
-            orphans
+            summary
         });
 
+        // iterate through chunks cursor, spawning background threads to send each chunk to every shard except its own, if any results are found put them on the orphan channel
         let mut tasks = Vec::new();
-        while let Some(chunk) = chunks_cursor.next().await.transpose().unwrap() {
+        while let Some(chunk) = chunks_cursor.try_next().await? {
             let shards = self.shards.clone();
             let chunk = Arc::new(chunk);
 
@@ -94,20 +100,25 @@ impl ShardedCluster {
                     let mut chunk_ids =
                         db::find_id_range(&client, &ns, &shard_key.clone(), &chunk.min, &chunk.max)
                             .await;
-                    while let Some(id) = chunk_ids.next().await {
-                        log::debug!("found {:?} on shard {}", &id.clone().unwrap(), &shard_name);
-                        tx.send((shard_name.clone(), id.unwrap())).await.unwrap();
+                    while let Some(id) = chunk_ids.try_next().await.unwrap() {
+                        log::debug!("found {:?} on shard {}", &id, &shard_name);
+                        let orphan = Orphan {
+                            shard: shard_name.clone(),
+                            id: id,
+                        };
+                        tx.send(orphan).await.unwrap();
                     }
                     drop(tx);
                 });
                 tasks.push(handle);
             }
         }
-        join_all(tasks).await;
-        // drop the original tx that was cloned and is no longer needed
-        drop(tx);
-        let orphans = orphans.await.unwrap();
 
-        Ok(orphans)
+        // ensure all tasks have finished, drop the original tx and wait for the reciever to process it all before returning the completed summary
+        join_all(tasks).await;
+        drop(tx);
+        let summary = handle.await.unwrap();
+
+        Ok(summary)
     }
 }

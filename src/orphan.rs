@@ -3,29 +3,35 @@ use std::collections::HashMap;
 use crate::db::Id;
 
 #[derive(Debug)]
-pub struct Orphans {
+pub struct Orphan {
+    pub shard: String,
+    pub id: Id,
+}
+
+#[derive(Debug)]
+pub struct OrphanSummary {
     total_count: usize,
     shard_map: HashMap<String, Vec<Id>>,
 }
 
-impl Orphans {
+impl OrphanSummary {
     pub fn new(shards: Vec<&String>) -> Self {
         let total_count = 0;
         let mut shard_map = HashMap::new();
         for shard in shards.iter() {
             shard_map.insert(shard.clone().to_owned(), Vec::<Id>::new());
         }
-        Orphans {
+        OrphanSummary {
             total_count,
             shard_map,
         }
     }
 
-    pub fn add(&mut self, shard: &String, orphan_id: Id) {
+    pub fn add(&mut self, orphan: Orphan) {
         self.shard_map
-            .get_mut(shard)
+            .get_mut(&orphan.shard)
             .expect("cannot find shard in orphan shard_map")
-            .push(orphan_id);
+            .push(orphan.id);
         self.total_count += 1;
     }
 
