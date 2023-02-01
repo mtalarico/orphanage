@@ -65,7 +65,7 @@ impl ShardedCluster {
                 .unwrap()
         });
 
-        // join threads back together
+        // join threads back together, unwrap values
         let (shard_key_res, chunks_cursor_res) = tokio::join!(shard_key_task, chunks_task);
         let shard_key = Arc::new(shard_key_res.unwrap());
         let mut chunks_cursor = chunks_cursor_res.unwrap();
