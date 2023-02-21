@@ -2,38 +2,58 @@
 
 **THIS PROGRAM IS CURRENTLY IN AN EXPERIMENTAL STATE AND IS NOT INTENDED TO BE RUN IN PRODUCTION**
 
+This is a rewrite of https://github.com/mongodb/support-tools/tree/master/orphanage in rust with a focus on improve performance via concurrency
 
-This is an incomplete rewrite of https://github.com/mongodb/support-tools/tree/master/orphanage in rust
+## Usage
 
-## Usage:
-
-Note the balancer must be manually disabled before running this program, see todo for future plans
+ ### Building
+ ** Note the balancer must be manually disabled before running this program, see todo for future plans **
 
 `cargo build --release`
 
-`./target/release/orphanage --help`
+`cd ./target/release/`
 
+### Running
+
+`orphanage --help`
 ```
-Find orphan documents on your sharded MongoDB cluster
+A program to locate orphaned documents on your sharded MongoDB cluster
 
-Usage: orphanage [OPTIONS] --uri <URI> --db <DB> --coll <COLL>
+Usage: orphanage [OPTIONS] <COMMAND>
+
+Commands:
+  estimate  Return each shard's orphan count based on metadata [lowest performance impact]
+  print     Query each shard's real orphan count or list of IDs [heavier performance impact]
+  update    Query and update each shard, marking its orphans or writing their IDs to a designated namespace [heaviest performance impact]
+  help      Print this message or the help of the given subcommand(s)
 
 Options:
-      --uri <URI>    URI of MongoDB cluster, refer to https://www.mongodb.com/docs/manual/reference/connection-string/ for format
-  -d, --db <DB>      Database name
-  -c, --coll <COLL>  Collection name
-      --verbose      Print individual IDs of each orphan doc in each shard -- *warning* this may produce signficant output
+      --uri <URI>    URI of MongoDB cluster, refer to https://www.mongodb.com/docs/manual/reference/connection-string/ for format [default: mongodb://localhost:27016]
+  -d, --db <DB>      Database name [default: test]
+  -c, --coll <COLL>  Collection name [default: test]
   -h, --help         Print help
   -V, --version      Print version
 ```
+### Additional Options
+To see if a subcommand has any additional parameters that can be passed, run `--help` after the subcommand, e.g.
+
+`orphanage ... print --help`
+```
+Query each shard's real orphan count or list of IDs [heavier performance impact]
+
+Usage: orphanage print [OPTIONS]
+
+Options:
+      --verbose  Set true to print a verbose map of each shard's orphan ID
+  -h, --help     Print help
+```
 
 ## Todo
-[x] add ability to estimate, print, or update orphans
+* ~~add ability to estimate, print, or update orphans~~
 * add output of orphan IDs to a namespace
 * add balancer check
-* disable balancing on specified collection during check
-* background thread that checks balancer stays disabled during length of check ?
-
+* optionally disable balancing on specified collection before check, enable it after complete
+* [potentially] background thread that checks balancer stays disabled during length of check
 
 ---
 
