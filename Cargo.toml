@@ -9,7 +9,7 @@ edition = "2021"
 clap = { version = "4", features = ["derive"] }
 mongodb = { version = "2", features = ["tokio-runtime"] }
 tokio = { version = "1", features = ["full"] }
-futures = { version = "0.3" }
+futures = { version = "0" }
 serde = { version = "1" }
 log = { version = "0" }
 env_logger = { version = "0" }

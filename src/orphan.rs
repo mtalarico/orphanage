@@ -35,20 +35,31 @@ impl OrphanSummary {
         self.total_count += 1;
     }
 
-    pub fn get_cluster_total(&self) -> usize {
+    pub fn cluster_total(&self) -> usize {
         self.total_count
     }
 
-    pub fn get_shard_totals(&self) -> HashMap<String, usize> {
+    pub fn shard_totals(&self) -> HashMap<String, usize> {
         let shard_totals: HashMap<String, usize> = HashMap::from_iter(
             self.shard_map
                 .iter()
-                .map(|(key, vec_val)| (key.clone().to_owned(), vec_val.len())),
+                .filter(|(_, ids)| ids.len() > 0)
+                .map(|(key, ids)| (key.clone().to_owned(), ids.len())),
         );
         shard_totals
     }
 
-    pub fn get_shard_map(&self) -> &HashMap<String, Vec<Id>> {
-        &self.shard_map
+    pub fn shard_map(&self) -> HashMap<String, Vec<Id>> {
+        let filtered = HashMap::from_iter(
+            self.shard_map
+                .iter()
+                .filter(|(_, ids)| ids.len() > 0)
+                .map(|(name, ids)| (name.to_owned(), ids.to_owned())),
+        );
+        filtered
+    }
+
+    pub fn num_shards(&self) -> usize {
+        self.shard_map.values().filter(|ids| ids.len() > 0).count()
     }
 }

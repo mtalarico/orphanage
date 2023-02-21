@@ -2,6 +2,17 @@ use mongodb::bson;
 
 use crate::db;
 
+pub fn parse_ns(ns: &str) -> mongodb::Namespace {
+    let split: Vec<&str> = ns.split(".").collect();
+    if split.len() != 2 {
+        panic!("malformed namespace");
+    }
+    mongodb::Namespace {
+        db: String::from(split[0]),
+        coll: String::from(split[1]),
+    }
+}
+
 /// Convert internal connection string format (rs/host:port,...,host:port) to uri format (mongodb://[username:password@]host1[:port1][,...hostN[:portN]][/[defaultauthdb][?options]])
 pub fn update_connection_string(cluster: &str, shard: &str) -> String {
     let hosts = get_host_from_connection_string(cluster);

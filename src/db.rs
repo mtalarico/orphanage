@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Id {
-    _id: bson::oid::ObjectId,
+    pub _id: bson::oid::ObjectId,
 }
 
 /// connects to instance at uri, specify options and credentials according to mongodb docs (https://www.mongodb.com/docs/manual/reference/connection-string/)
@@ -52,6 +52,25 @@ pub async fn find_id_range(
         .await
         .expect("cannot execute find");
     result
+}
+
+pub async fn count(
+    client: &mongodb::Client,
+    ns: &mongodb::Namespace,
+    estimated: bool,
+) -> mongodb::error::Result<u64> {
+    if estimated == true {
+        return Ok(client
+            .database(ns.db.as_str())
+            .collection::<()>(ns.coll.as_str())
+            .estimated_document_count(None)
+            .await?);
+    }
+    Ok(client
+        .database(ns.db.as_str())
+        .collection::<()>(ns.coll.as_str())
+        .count_documents(None, None)
+        .await?)
 }
 
 pub mod mongos {
