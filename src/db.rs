@@ -1,7 +1,8 @@
 use mongodb::bson;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+/// A thin wrapper around an objectId for deseralization
+#[derive(Debug, Clone, Deserialize)]
 pub struct Id {
     pub _id: bson::oid::ObjectId,
 }
@@ -54,6 +55,7 @@ pub async fn find_id_range(
     result
 }
 
+/// Either estimate or actually count the number of documents in a namespace
 pub async fn count(
     client: &mongodb::Client,
     ns: &mongodb::Namespace,

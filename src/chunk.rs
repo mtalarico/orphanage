@@ -1,7 +1,7 @@
 use mongodb::bson;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Chunk {
     pub shard: String,
     pub min: bson::Document,

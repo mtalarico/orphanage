@@ -2,12 +2,16 @@ use std::collections::HashMap;
 
 use crate::db::Id;
 
+/// A single orphan ID as well as the shard it was found on
 #[derive(Debug)]
 pub struct Orphan {
     pub shard: String,
     pub id: Id,
 }
 
+/// Results of finding orphans
+///
+/// Can retrieve a total count of orphans, a map of orphan counts on each shard, or a verbose map of orphans
 #[derive(Debug)]
 pub struct OrphanSummary {
     total_count: usize,

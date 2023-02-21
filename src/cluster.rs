@@ -1,11 +1,13 @@
+// TODO: This file contains a lot of sloppy code and needs to be cleaned up
+
 use std::{collections::HashMap, sync::Arc};
 
 use futures::{future::join_all, TryStreamExt};
-use mongodb::bson::{self};
+use mongodb::bson;
 
 use crate::{
     chunk::Chunk,
-    db::{self},
+    db,
     orphan::{Orphan, OrphanSummary},
     util, BUFFER_SIZE,
 };
