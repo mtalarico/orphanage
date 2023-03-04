@@ -2,6 +2,8 @@
 name = "orphanage"
 version = "0.1.0"
 edition = "2021"
+authors = ["michael talarico"]
+description = "A program to locate orphaned documents on your sharded MongoDB cluster"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
